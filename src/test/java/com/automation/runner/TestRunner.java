@@ -16,7 +16,7 @@ import org.testng.annotations.DataProvider;
         "pretty",
         "html:target/cucumber-reports/html",
         "json:target/cucumber-reports/Cucumber.json",
-        "junit:target/cucumber-reports/Cucumber.xml",
+        "junit:target/surefire-reports/Cucumber.xml",
         "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
     },
     monochrome = true,
