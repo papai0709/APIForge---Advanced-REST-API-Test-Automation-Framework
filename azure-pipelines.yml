@@ -1,0 +1,281 @@
+trigger:
+  - main
+  - develop
+  - feature/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  JAVA_VERSION: '21'
+  MVN_VERSION: '3.9.0'
+  BUILD_CONFIGURATION: 'Release'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Java Project'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: MavenAuthenticate@0
+            displayName: 'Maven Authenticate'
+            inputs:
+              artifactsFeeds: 'RestAssured-Artifacts'
+
+          - task: Maven@3
+            displayName: 'Maven Clean Install'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+              goals: 'clean install'
+
+  - stage: Test
+    displayName: 'Run Tests'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: UnitTests
+        displayName: 'Unit Tests'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Run Unit Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+              goals: 'test'
+
+      - job: APITests
+        displayName: 'API Tests - Smoke'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Run Smoke Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+              goals: 'test -Dcucumber.filter.tags="@smoke"'
+
+      - job: RegressionTests
+        displayName: 'API Tests - Regression'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Run Regression Tests'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+              goals: 'test -Dcucumber.filter.tags="@regression"'
+
+  - stage: CodeQuality
+    displayName: 'Code Quality & Security'
+    dependsOn: Test
+    condition: succeeded()
+    jobs:
+      - job: SonarQube
+        displayName: 'SonarQube Code Quality'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: SonarQubePrepare@5
+            displayName: 'Prepare SonarQube Analysis'
+            inputs:
+              SonarQube: 'SonarQube'
+              scannerMode: 'MSBuild'
+              projectKey: 'restassured-framework'
+              projectName: 'RestAssured Test Automation Framework'
+              projectVersion: '$(Build.BuildNumber)'
+
+          - task: Maven@3
+            displayName: 'Maven Build with SonarQube'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              goals: 'clean install sonar:sonar -Dsonar.projectKey=restassured-framework'
+
+          - task: SonarQubePublish@5
+            displayName: 'Publish SonarQube Results'
+            inputs:
+              pollingTimeoutSec: '300'
+
+      - job: DependencyCheck
+        displayName: 'Dependency Security Check'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Run Dependency Check'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              goals: 'dependency:tree org.owasp:dependency-check-maven:check'
+
+  - stage: Reports
+    displayName: 'Generate & Publish Reports'
+    dependsOn: Test
+    condition: succeededOrFailed()
+    jobs:
+      - job: AllureReports
+        displayName: 'Allure Reports'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Generate Allure Results'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              goals: 'allure:report'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Allure Reports'
+            inputs:
+              PathtoPublish: 'target/site/allure-maven-plugin'
+              ArtifactName: 'AllureReports'
+              publishLocation: 'Container'
+            condition: always()
+
+      - job: TestReports
+        displayName: 'Publish Test Reports'
+        steps:
+          - task: PublishTestResults@2
+            displayName: 'Publish TestNG Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/target/surefire-reports/TEST-*.xml'
+              mergeTestResults: true
+              failTaskOnFailedTests: false
+              testRunTitle: 'API Test Results'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Test Logs'
+            inputs:
+              PathtoPublish: 'logs'
+              ArtifactName: 'TestLogs'
+              publishLocation: 'Container'
+            condition: always()
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Test Output'
+            inputs:
+              PathtoPublish: 'test-output'
+              ArtifactName: 'TestOutput'
+              publishLocation: 'Container'
+            condition: always()
+
+  - stage: Package
+    displayName: 'Package & Deploy'
+    dependsOn: CodeQuality
+    condition: succeeded()
+    jobs:
+      - job: CreateArtifact
+        displayName: 'Create Build Artifact'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Maven Package'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              goals: 'clean package -DskipTests'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish JAR Artifact'
+            inputs:
+              PathtoPublish: 'target'
+              ArtifactName: 'RestAssuredFramework'
+              publishLocation: 'Container'
+
+      - job: PublishToNuget
+        displayName: 'Publish to Artifact Repository'
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Use Java 21'
+            inputs:
+              version: '21'
+              packageType: 'sdk'
+
+          - task: Maven@3
+            displayName: 'Maven Deploy to Repository'
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '21'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: false
+              goals: 'deploy -DskipTests'
+

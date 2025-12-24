@@ -1,0 +1,156 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Test User 1",
+      "username": "testuser1",
+      "email": "testuser1@example.com",
+      "phone": "123-456-7890",
+      "website": "testuser1.com",
+      "address": {
+        "street": "123 Test Street",
+        "suite": "Apt 1",
+        "city": "Test City",
+        "zipcode": "12345",
+        "geo": {
+          "lat": "40.7128",
+          "lng": "-74.0060"
+        }
+      },
+      "company": {
+        "name": "Test Company 1",
+        "catchPhrase": "Testing is our passion",
+        "bs": "quality assurance solutions"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Test User 2",
+      "username": "testuser2",
+      "email": "testuser2@example.com",
+      "phone": "987-654-3210",
+      "website": "testuser2.com",
+      "address": {
+        "street": "456 Demo Avenue",
+        "suite": "Suite 2",
+        "city": "Demo City",
+        "zipcode": "67890",
+        "geo": {
+          "lat": "34.0522",
+          "lng": "-118.2437"
+        }
+      },
+      "company": {
+        "name": "Demo Company 2",
+        "catchPhrase": "Innovation through automation",
+        "bs": "automated testing frameworks"
+      }
+    }
+  ],
+  "test_scenarios": {
+    "positive_tests": [
+      {
+        "scenario": "create_user_with_valid_data",
+        "description": "Create a new user with all valid required fields",
+        "test_data": {
+          "name": "John Doe",
+          "username": "johndoe",
+          "email": "john.doe@example.com"
+        },
+        "expected_status": 201
+      },
+      {
+        "scenario": "get_user_by_valid_id",
+        "description": "Retrieve user information using valid user ID",
+        "test_data": {
+          "user_id": 1
+        },
+        "expected_status": 200
+      },
+      {
+        "scenario": "update_user_with_valid_data",
+        "description": "Update existing user with valid data",
+        "test_data": {
+          "user_id": 1,
+          "name": "John Updated",
+          "username": "johnupdated",
+          "email": "john.updated@example.com"
+        },
+        "expected_status": 200
+      }
+    ],
+    "negative_tests": [
+      {
+        "scenario": "get_user_with_invalid_id",
+        "description": "Attempt to retrieve user with non-existent ID",
+        "test_data": {
+          "user_id": 999999
+        },
+        "expected_status": 404
+      },
+      {
+        "scenario": "create_user_with_invalid_email",
+        "description": "Attempt to create user with invalid email format",
+        "test_data": {
+          "name": "Invalid User",
+          "username": "invaliduser",
+          "email": "invalid-email-format"
+        },
+        "expected_status": 400
+      },
+      {
+        "scenario": "create_user_with_missing_required_fields",
+        "description": "Attempt to create user without required fields",
+        "test_data": {
+          "username": "incompleteuser"
+        },
+        "expected_status": 400
+      }
+    ]
+  },
+  "database_test_data": {
+    "users_table_queries": {
+      "select_all_users": "SELECT * FROM users",
+      "select_user_by_id": "SELECT * FROM users WHERE id = ?",
+      "select_user_by_email": "SELECT * FROM users WHERE email = ?",
+      "count_users": "SELECT COUNT(*) FROM users",
+      "insert_user": "INSERT INTO users (name, username, email) VALUES (?, ?, ?)",
+      "update_user": "UPDATE users SET name = ?, email = ? WHERE id = ?",
+      "delete_user": "DELETE FROM users WHERE id = ?"
+    }
+  },
+  "api_endpoints": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "users": {
+      "get_all_users": "/users",
+      "get_user_by_id": "/users/{id}",
+      "create_user": "/users",
+      "update_user": "/users/{id}",
+      "delete_user": "/users/{id}"
+    }
+  },
+  "validation_rules": {
+    "user": {
+      "name": {
+        "required": true,
+        "min_length": 2,
+        "max_length": 100,
+        "pattern": "^[a-zA-Z\\s]+$"
+      },
+      "username": {
+        "required": true,
+        "min_length": 3,
+        "max_length": 50,
+        "pattern": "^[a-zA-Z0-9._]+$"
+      },
+      "email": {
+        "required": true,
+        "pattern": "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$"
+      },
+      "phone": {
+        "required": false,
+        "pattern": "^\\d{3}-\\d{3}-\\d{4}$"
+      }
+    }
+  }
+}
