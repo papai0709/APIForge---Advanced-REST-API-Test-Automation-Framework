@@ -28,7 +28,7 @@ public class UserPOM extends BasePOM {
      * Get user by ID
      */
     public Response getUserById(long userId) {
-        String endpoint = buildEndpoint(USERS_ENDPOINT, String.valueOf(userId));
+        String endpoint = buildEndpoint(String.valueOf(userId));
         return performGet(endpoint);
     }
     
@@ -36,14 +36,14 @@ public class UserPOM extends BasePOM {
      * Create new user
      */
     public Response createUser(User user) {
-        return performPost(USERS_ENDPOINT, user);
+        return performPost(baseEndpoint, user);
     }
     
     /**
      * Update existing user
      */
     public Response updateUser(long userId, User user) {
-        String endpoint = buildEndpoint(USERS_ENDPOINT, String.valueOf(userId));
+        String endpoint = buildEndpoint(String.valueOf(userId));
         return performPut(endpoint, user);
     }
     
@@ -51,7 +51,7 @@ public class UserPOM extends BasePOM {
      * Partially update user
      */
     public Response patchUser(long userId, User user) {
-        String endpoint = buildEndpoint(USERS_ENDPOINT, String.valueOf(userId));
+        String endpoint = buildEndpoint(String.valueOf(userId));
         return performPatch(endpoint, user);
     }
     
@@ -59,7 +59,7 @@ public class UserPOM extends BasePOM {
      * Delete user
      */
     public Response deleteUser(long userId) {
-        String endpoint = buildEndpoint(USERS_ENDPOINT, String.valueOf(userId));
+        String endpoint = buildEndpoint(String.valueOf(userId));
         return performDelete(endpoint);
     }
     
