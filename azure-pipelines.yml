@@ -128,8 +128,8 @@ stages:
             inputs:
               SonarQube: 'SonarQube'
               scannerMode: 'MSBuild'
-              projectKey: 'restassured-framework'
-              projectName: 'RestAssured Test Automation Framework'
+              projectKey: 'apiforge'
+              projectName: 'APIForge - Advanced REST API Test Automation Framework'
               projectVersion: '$(Build.BuildNumber)'
 
           - task: Maven@3
@@ -140,7 +140,7 @@ stages:
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '21'
               jdkArchitectureOption: 'x64'
-              goals: 'clean install sonar:sonar -Dsonar.projectKey=restassured-framework'
+              goals: 'clean install sonar:sonar -Dsonar.projectKey=apiforge'
 
           - task: SonarQubePublish@5
             displayName: 'Publish SonarQube Results'
