@@ -172,11 +172,35 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Generate Allure Report
-        run: mvn allure:report
+      - name: Download previous Allure history
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-history
+          path: allure-report/history/
+        continue-on-error: true
+
+      - name: Generate Allure Report with History
+        run: |
+          # Copy history to the location where allure:report expects it
+          if [ -d allure-report/history ]; then
+            mkdir -p target/site/allure-maven-plugin/history
+            cp -r allure-report/history/* target/site/allure-maven-plugin/history/ 2>/dev/null || true
+          fi
+          mvn allure:report -Dallure.results.directory=target/allure-results
         env:
           MAVEN_OPTS: -Xmx3072m
         continue-on-error: true
+        shell: bash
+
+      - name: Preserve history for next run
+        if: always()
+        run: |
+          mkdir -p allure-report/history
+          if [ -d target/site/allure-maven-plugin/history ]; then
+            cp -r target/site/allure-maven-plugin/history/* allure-report/history/ 2>/dev/null || true
+          fi
+          echo "History preservation completed"
+        shell: bash
 
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
@@ -184,6 +208,14 @@ jobs:
         with:
           name: allure-report
           path: target/site/allure-maven-plugin/
+
+      - name: Upload Allure History for Next Run
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-history
+          path: allure-report/history/
+          retention-days: 90
 
       - name: Upload Test Logs
         uses: actions/upload-artifact@v4
